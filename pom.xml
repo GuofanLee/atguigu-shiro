@@ -11,6 +11,7 @@
 
     <modules>
         <module>01-shiro-hello-world</module>
+        <module>02-shiro-spring</module>
     </modules>
 
     <properties>

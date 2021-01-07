@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
+
+    <context:component-scan base-package="com.atguigu.shiro.spring">
+        <!-- 指定 Spring 容器不扫描标注了以下注解的类 -->
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+        <context:exclude-filter type="annotation" expression="org.springframework.web.bind.annotation.ControllerAdvice"/>
+        <context:exclude-filter type="annotation" expression="org.springframework.web.bind.annotation.RestController"/>
+        <context:exclude-filter type="annotation" expression="org.springframework.web.bind.annotation.RestControllerAdvice"/>
+    </context:component-scan>
+
+    <!-- 配置 SecurityManager -->
+    <bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+        <property name="cacheManager" ref="cacheManager"/>
+        <property name="realm" ref="jdbcRealm"/>
+    </bean>
+
+    <!-- 配置 CacheManager -->
+    <bean id="cacheManager" class="org.apache.shiro.cache.ehcache.EhCacheManager">
+        <property name="cacheManagerConfigFile" value="classpath:ehcache.xml"/>
+    </bean>
+
+    <!-- 配置 Realm -->
+    <bean id="jdbcRealm" class="com.atguigu.shiro.spring.realms.ShiroRealm"/>
+
+    <!-- 配置 LifecycleBeanPostProcessor。作用：可以自动调用配置在 Spring IOC 容器中 shiro bean 的生命周期方法 -->
+    <bean id="lifecycleBeanPostProcessor" class="org.apache.shiro.spring.LifecycleBeanPostProcessor"/>
+
+    <!-- 作用：在 Spring Bean 中使用 Shiro 注解（但必须在配置了 LifecycleBeanPostProcessor 之后才可以使用） -->
+    <bean class="org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator" depends-on="lifecycleBeanPostProcessor"/>
+    <bean class="org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor">
+        <property name="securityManager" ref="securityManager"/>
+    </bean>
+
+    <!-- 配置 ShiroFilter，id 必须和 web.xml 中配置的 DelegatingFilterProxy 的 filter-name 一致 -->
+    <bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+        <property name="securityManager" ref="securityManager"/>
+        <!-- 登录页面 -->
+        <property name="loginUrl" value="/login.jsp"/>
+        <!-- 登录成功的页面 -->
+        <property name="successUrl" value="/loginSuccess.jsp"/>
+        <!-- 提示用户没有权限的页面 -->
+        <property name="unauthorizedUrl" value="/unauthorized.jsp"/>
+        <!-- 配置哪些页面需要受保护（即需要认证/登录才能访问），哪些页面不需要保护（即不需要认证/登录就能访问），以及访问这些页面需要的权限，实际上是一个过滤器 -->
+        <property name="filterChainDefinitions">
+            <!-- anon 表示可以匿名访问（即不需要认证/登录就能访问） -->
+            <!-- authc 表示需要认证/登录后才能访问，如果没有认证，则 shiro 会自动重定向到上面指定的 loginUrl -->
+            <value>
+                <!-- 表示 login.jsp 页面可以匿名访问（即不需要认证/登录就能访问） -->
+                <!-- shiro 并不是说只能对页面进行拦截，而是可以对所有url资源进行拦截，比如图片(/xxx.png)、js(/xxx.js)、css(/xxx.css)等等 -->
+                /login.jsp = anon
+                <!-- 表示其它资源需要认证/登录后才能访问，如果没有认证/登录，则 shiro 会自动重定向到上面指定的 loginUrl -->
+                /** = authc
+            </value>
+        </property>
+    </bean>
+
+</beans>
